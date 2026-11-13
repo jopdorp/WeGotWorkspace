@@ -1,0 +1,50 @@
+name: Rebuild fpm and nginx images
+
+# Rebuilds the latest release's fpm and nginx images from its deploy ZIP with
+# the base images on main and fresh Alpine packages, so base-image fixes reach
+# installs between releases. Moves the version tag and :latest to the rebuild.
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebuild and push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="$(gh release view --json tagName --jq .tagName)"
+          mkdir -p dist/releases
+          gh release download "$tag" --pattern 'wegotworkspace-deploy-*.zip' --output dist/releases/wegotworkspace-deploy.zip
+          for target in fpm nginx; do
+            image="ghcr.io/wegotworkspace/wegotworkspace-${target}"
+            docker buildx build . --push --no-cache \
+              --platform linux/amd64,linux/arm64 \
+              --file docker/install/Dockerfile.fpm-nginx --target "$target" \
+              --tag "${image}:${tag#v}" --tag "${image}:latest"
+          done
