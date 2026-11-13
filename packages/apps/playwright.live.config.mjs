@@ -23,6 +23,9 @@ export default defineConfig({
     baseURL,
     storageState: authFile,
     ignoreHTTPSErrors: process.env.WGW_APPS_E2E_IGNORE_HTTPS === "1",
+    // Chromium's offline emulation and page.route do not reach service-worker fetches,
+    // and a production build serves the app through its worker.
+    serviceWorkers: "block",
     trace: "on-first-retry",
     launchOptions: {
       args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],

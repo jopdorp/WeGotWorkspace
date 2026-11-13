@@ -63,10 +63,6 @@ test.describe("Calendar weeks outside the loaded window (live app)", () => {
 });
 
 test.describe("Calendar UTC event outside the loaded window (live app)", () => {
-  // Chromium's offline emulation does not reach service-worker fetches: against
-  // a production build the app would still load the week through the worker.
-  test.use({ serviceWorkers: "block" });
-
   test("a UTC event from another client stays cached for offline", async ({ page }) => {
     test.setTimeout(120_000);
     const title = `e2e-far-utc-${Date.now()}`;

@@ -200,8 +200,6 @@ async function search(page: Page, text: string): Promise<void> {
 
 test.describe("Contacts first download on a new device", () => {
   test.describe.configure({ mode: "serial" });
-  // page.route must see the app's own requests, not a service worker's.
-  test.use({ serviceWorkers: "block" });
 
   let api: Jmap;
   let seededIds: string[] = [];
