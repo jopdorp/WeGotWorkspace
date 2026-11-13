@@ -21,6 +21,7 @@ export function AdminRealtimeCollaborationPane({
   const relayReady =
     controller.settingsForm.turnSecretSet &&
     splitIceUrlRows(controller.settingsForm.turnUrls).some((url) => url !== "");
+  const managed = controller.settingsForm.operatorManaged;
   return (
     <>
       <Card title="WebRTC ICE servers">
@@ -30,6 +31,11 @@ export function AdminRealtimeCollaborationPane({
           when direct peer-to-peer connections are blocked. Add up to three URLs of each kind, one
           per field.
         </p>
+        {managed ? (
+          <p className="mb-3 text-sm text-muted-foreground">
+            The TURN relay and its video quality are managed by the operator of this instance.
+          </p>
+        ) : null}
         <AdminStunUrlsField
           value={controller.settingsForm.stunUrls}
           onChange={(stunUrls) => controller.setSettingsForm((prev) => ({ ...prev, stunUrls }))}
@@ -40,12 +46,14 @@ export function AdminRealtimeCollaborationPane({
             label="TURN URLs"
             itemLabel="TURN URL"
             value={controller.settingsForm.turnUrls}
+            disabled={managed}
             onChange={(turnUrls) => controller.setSettingsForm((prev) => ({ ...prev, turnUrls }))}
           />
         </FormField>
         <FormField htmlFor="admin-realtime-turn-secret" label="TURN shared secret">
           <Input
             id="admin-realtime-turn-secret"
+            disabled={managed}
             variant="password"
             autoComplete="new-password"
             value={controller.settingsForm.turnSecret}
@@ -73,7 +81,7 @@ export function AdminRealtimeCollaborationPane({
             relay stays disabled until you enter a shared secret here, which also removes them.
           </p>
         ) : null}
-        {controller.settingsForm.turnSecretSet ? (
+        {controller.settingsForm.turnSecretSet && !managed ? (
           <div className="flex justify-start">
             <Button
               label="Clear stored TURN secret"
@@ -121,6 +129,7 @@ export function AdminRealtimeCollaborationPane({
         >
           <Select
             value={controller.settingsForm.maxVideoProfileRelay}
+            disabled={managed}
             onValueChange={(value) => {
               controller.setSettingsForm((prev) => ({
                 ...prev,

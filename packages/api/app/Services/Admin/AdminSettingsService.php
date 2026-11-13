@@ -24,6 +24,9 @@ final class AdminSettingsService
         SettingKeys::MAIL_DELIVERY_SMTP_SECURITY,
         SettingKeys::MAIL_DELIVERY_SMTP_USERNAME,
         SettingKeys::MAIL_DELIVERY_SMTP_PASSWORD,
+        SettingKeys::RTC_TURN_URL,
+        SettingKeys::RTC_TURN_SECRET,
+        SettingKeys::MEET_MAX_VIDEO_PROFILE_RELAY,
     ];
 
     public function __construct(
@@ -42,6 +45,7 @@ final class AdminSettingsService
         if (config('wgw.operator_managed')) {
             $values = array_diff_key($values, array_flip(self::OPERATOR_MANAGED_KEYS));
             $clearSmtpPassword = false;
+            $clearTurnSecret = false;
         }
         $this->mailDelivery->persistAdminSave($values, $clearSmtpPassword);
         unset($values[SettingKeys::MAIL_DELIVERY_SMTP_PASSWORD], $values[SettingKeys::MAIL_DELIVERY_LAST_TEST_SEND]);

@@ -15,6 +15,7 @@ export type AdminIceUrlListProps = {
   value: string;
   onChange: (value: string) => void;
   max?: number;
+  disabled?: boolean;
 };
 
 /**
@@ -28,6 +29,7 @@ export function AdminIceUrlList({
   value,
   onChange,
   max = MAX_ICE_URLS_PER_KIND,
+  disabled,
 }: AdminIceUrlListProps) {
   const [commaRefused, setCommaRefused] = useState(false);
   const rows = splitIceUrlRows(value);
@@ -62,6 +64,7 @@ export function AdminIceUrlList({
               className="admin-ice-url-list__input"
               aria-label={name}
               value={url}
+              disabled={disabled}
               onChange={(event) => setRow(index, event.target.value)}
               onPaste={refuseCommaPaste}
               onBlur={() => setCommaRefused(false)}
@@ -71,6 +74,7 @@ export function AdminIceUrlList({
                 label={`Remove ${name}`}
                 icon={<Trash2 className="size-3.5" aria-hidden />}
                 variant="outline"
+                disabled={disabled}
                 onClick={() => onChange(rows.filter((_, row) => row !== index).join(","))}
               />
             ) : null}

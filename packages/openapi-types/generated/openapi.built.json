@@ -1242,7 +1242,7 @@
                     },
                     "operatorManaged": {
                         "type": "boolean",
-                        "description": "True when the operator sets mail delivery. Saves skip those settings."
+                        "description": "True when the operator sets mail delivery and the call relay. Saves skip those settings."
                     }
                 },
                 "required": [

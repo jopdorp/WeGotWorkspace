@@ -9036,7 +9036,7 @@ export interface components {
             logoutUrl: string;
             /** @description Configuration problems the admin should fix. Empty when there are none. */
             securityWarnings: components["schemas"]["AdminSecurityWarning"][];
-            /** @description True when the operator sets mail delivery. Saves skip those settings. */
+            /** @description True when the operator sets mail delivery and the call relay. Saves skip those settings. */
             operatorManaged: boolean;
         };
         UpdateApplyResponse: components["schemas"]["UpdateApplyResult"];

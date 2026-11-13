@@ -143,7 +143,10 @@ final class AdminMailDeliveryTest extends WgwDatabaseTestCase
 
         $this->withBearer($this->adminBearerToken())
             ->putJson('/api/v1/admin/settings', [
-                'values' => [SettingKeys::MAIL_DELIVERY_SMTP_HOST => 'elsewhere.example.test'],
+                'values' => [
+                    SettingKeys::MAIL_DELIVERY_SMTP_HOST => 'elsewhere.example.test',
+                    SettingKeys::MEET_MAX_VIDEO_PROFILE_RELAY => 'p720',
+                ],
             ])
             ->assertOk()
             ->assertJsonPath('saved', []);

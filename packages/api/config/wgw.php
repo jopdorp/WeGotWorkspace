@@ -54,7 +54,7 @@ return [
     ],
     /** Install channel: `docker` (image pull + setup.sh) or `zip` / unset (Admin web updater). */
     'install_channel' => env('WGW_INSTALL_CHANNEL'),
-    /** Mail delivery is set by the operator: Admin shows it read-only and saves skip it. */
+    /** Mail delivery and the call relay are set by the operator: Admin shows them read-only and saves skip them. */
     'operator_managed' => (bool) env('WGW_OPERATOR_MANAGED', false),
     /** Extra Host names, comma-separated, trusted in addition to the APP_URL host. */
     'trusted_hosts' => env('WGW_TRUSTED_HOSTS'),
