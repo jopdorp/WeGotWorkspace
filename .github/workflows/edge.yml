@@ -106,6 +106,22 @@ jobs:
             -t ghcr.io/wegotworkspace/wegotworkspace:edge \
             "$AMD64" "$ARM64"
 
+      - name: Promote the fpm and nginx images to edge tags
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          CANDIDATE: ghcr.io/wegotworkspace/wegotworkspace-candidate
+          DIGESTS: |
+            fpm ${{ needs.prepare.outputs.amd64_fpm_digest }} ${{ needs.prepare.outputs.arm64_fpm_digest }}
+            nginx ${{ needs.prepare.outputs.amd64_nginx_digest }} ${{ needs.prepare.outputs.arm64_nginx_digest }}
+        run: |
+          set -euo pipefail
+          while read -r target amd64 arm64; do
+            docker buildx imagetools create \
+              -t "ghcr.io/wegotworkspace/wegotworkspace-${target}:${VERSION}" \
+              -t "ghcr.io/wegotworkspace/wegotworkspace-${target}:edge" \
+              "${CANDIDATE}@${amd64}" "${CANDIDATE}@${arm64}"
+          done <<< "$DIGESTS"
+
       - name: Build Docker install bundle
         env:
           WGW_RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
@@ -152,4 +168,7 @@ jobs:
       - name: Delete edge images older than 14 days
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node tools/ghcr-prune-edge-images.mjs
+        run: |
+          for package in wegotworkspace wegotworkspace-fpm wegotworkspace-nginx; do
+            WGW_GHCR_EDGE_PACKAGE="$package" node tools/ghcr-prune-edge-images.mjs
+          done

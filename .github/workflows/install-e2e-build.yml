@@ -36,6 +36,14 @@ on:
       arm64_digest:
         description: ghcr.io image digest of the arm64 candidate, when built
         value: ${{ jobs.arm64.outputs.digest }}
+      amd64_fpm_digest:
+        value: ${{ jobs.candidate.outputs.fpm_digest }}
+      amd64_nginx_digest:
+        value: ${{ jobs.candidate.outputs.nginx_digest }}
+      arm64_fpm_digest:
+        value: ${{ jobs.arm64.outputs.fpm_digest }}
+      arm64_nginx_digest:
+        value: ${{ jobs.arm64.outputs.nginx_digest }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -158,6 +166,8 @@ jobs:
       packages: write
     outputs:
       digest: ${{ steps.push.outputs.digest }}
+      fpm_digest: ${{ steps.fpm.outputs.digest }}
+      nginx_digest: ${{ steps.nginx.outputs.digest }}
     steps:
       - uses: actions/checkout@v7
 
@@ -198,6 +208,32 @@ jobs:
           cache-from: type=gha,scope=amd64
           cache-to: type=gha,mode=max,scope=amd64
 
+      - name: Push amd64 fpm candidate
+        id: fpm
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/install/Dockerfile.fpm-nginx
+          target: fpm
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/wegotworkspace/wegotworkspace-candidate:sha-${{ github.sha }}-fpm
+          cache-from: type=gha,scope=fpm-amd64
+          cache-to: type=gha,mode=max,scope=fpm-amd64
+
+      - name: Push amd64 nginx candidate
+        id: nginx
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/install/Dockerfile.fpm-nginx
+          target: nginx
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/wegotworkspace/wegotworkspace-candidate:sha-${{ github.sha }}-nginx
+          cache-from: type=gha,scope=nginx-amd64
+          cache-to: type=gha,mode=max,scope=nginx-amd64
+
   # Native ARM runner (free for public repos). QEMU emulation took 22-36 min
   # on cache misses; a native build takes a few minutes.
   arm64:
@@ -210,6 +246,8 @@ jobs:
       packages: write
     outputs:
       digest: ${{ steps.push.outputs.digest }}
+      fpm_digest: ${{ steps.fpm.outputs.digest }}
+      nginx_digest: ${{ steps.nginx.outputs.digest }}
     steps:
       - uses: actions/checkout@v7
 
@@ -249,3 +287,29 @@ jobs:
           tags: ghcr.io/wegotworkspace/wegotworkspace-candidate:sha-${{ github.sha }}-arm64
           cache-from: type=gha,scope=arm64
           cache-to: type=gha,mode=max,scope=arm64
+
+      - name: Push arm64 fpm candidate
+        id: fpm
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/install/Dockerfile.fpm-nginx
+          target: fpm
+          push: true
+          platforms: linux/arm64
+          tags: ghcr.io/wegotworkspace/wegotworkspace-candidate:sha-${{ github.sha }}-fpm-arm64
+          cache-from: type=gha,scope=fpm-arm64
+          cache-to: type=gha,mode=max,scope=fpm-arm64
+
+      - name: Push arm64 nginx candidate
+        id: nginx
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/install/Dockerfile.fpm-nginx
+          target: nginx
+          push: true
+          platforms: linux/arm64
+          tags: ghcr.io/wegotworkspace/wegotworkspace-candidate:sha-${{ github.sha }}-nginx-arm64
+          cache-from: type=gha,scope=nginx-arm64
+          cache-to: type=gha,mode=max,scope=nginx-arm64
