@@ -8,6 +8,8 @@ const authFile = path.join(authDir, "admin.json");
 
 const username = process.env.WGW_E2E_USERNAME ?? "admin";
 const password = process.env.WGW_E2E_PASSWORD ?? "storybook-dev";
+const teammate = process.env.WGW_E2E_TEAMMATE ?? "member";
+const teammatePassword = process.env.WGW_E2E_TEAMMATE_PASSWORD ?? password;
 const apiBase = process.env.WGW_E2E_API_URL ?? "http://127.0.0.1:9080";
 const appOrigin = process.env.WGW_APPS_E2E_BASE_URL ?? "http://127.0.0.1:5173";
 
@@ -30,6 +32,29 @@ export default async function globalSetup() {
   const tokens = await response.json();
   if (!tokens.access_token) {
     throw new Error("E2E auth setup response missing tokens.");
+  }
+  const state = await fetch(`${apiBase}/api/v1/admin/state`, {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+  });
+  if (!state.ok) throw new Error(`E2E user setup failed (${state.status}): ${await state.text()}`);
+  const users = (await state.json()).users ?? [];
+  if (!users.some((user) => user.username === teammate)) {
+    const created = await fetch(`${apiBase}/api/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: teammate,
+        password: teammatePassword,
+        displayName: "E2E member",
+        email: `${teammate}@example.test`,
+      }),
+    });
+    if (!created.ok) {
+      throw new Error(`E2E user setup failed (${created.status}): ${await created.text()}`);
+    }
   }
   const refreshCookie = readRefreshCookie(response);
   const appUrl = new URL(appOrigin);
