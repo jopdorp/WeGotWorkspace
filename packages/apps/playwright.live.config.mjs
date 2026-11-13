@@ -7,10 +7,13 @@ const packageRoot = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(packageRoot, "..", "..");
 const baseURL = process.env.WGW_APPS_E2E_BASE_URL ?? "http://127.0.0.1:5173";
 const authFile = path.join(packageRoot, "e2e", ".auth", "admin.json");
+// Specs tagged @dev-server import the app's modules from the Vite dev server's /src.
+const devServer = ["127.0.0.1", "localhost"].includes(new URL(baseURL).hostname);
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: liveTierSpecPattern,
+  grepInvert: devServer ? undefined : /@dev-server/,
   globalSetup: "./e2e/global-setup-live.mjs",
   fullyParallel: false,
   workers: 1,

@@ -48,7 +48,7 @@ test.use({ storageState: { cookies: [], origins: [] }, actionTimeout: 15_000 });
 test.describe.configure({ timeout: 360_000 });
 
 for (const mesh of ["up", "blocked"] as const) {
-  test(`push reconnects every ${mesh === "up" ? 5 : 3} s with the mesh ${mesh}`, async ({
+  test(`push reconnects every ${mesh === "up" ? 5 : 3} s with the mesh ${mesh} @dev-server`, async ({
     browser,
   }) => {
     const id = `pmi${mesh}${Date.now().toString(36)}`;
