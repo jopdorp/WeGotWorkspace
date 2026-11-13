@@ -10,6 +10,7 @@ import {
   openNotesTab,
   openUser,
   OWNER,
+  serverNote,
   sleep,
   TEAM_NOTEBOOK,
   warmUpApp,
@@ -82,7 +83,8 @@ test("a tag and an archive reach a tab that has the note open, by push", async (
     await editor.click();
     await editor.press("End");
     await editor.pressSequentially(` typed-${id}`, { delay: 25 });
-    await sleep(1_500);
+    // B's save lands first, so A's If-Match etag stays current.
+    await expect.poll(async () => (await serverNote(OWNER, uid))?.body).toContain(`typed-${id}`);
     noteGets.length = 0;
 
     // A tags the note. B shows the tag by push, not by the poll.
