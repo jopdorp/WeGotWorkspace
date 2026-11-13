@@ -55,6 +55,8 @@ export default defineConfig({
     calendarSyncMatrixSpecPattern,
     meetChatSyncMatrixSpecPattern,
   ],
+  // The Meet chat matrix reloads offline through the built service worker.
+  use: { ...live.use, serviceWorkers: "allow" },
   timeout: 180_000,
   fullyParallel: true,
   maxFailures: ci ? 3 : 0,

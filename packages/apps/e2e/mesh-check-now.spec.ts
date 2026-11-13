@@ -48,7 +48,9 @@ test.use({ storageState: { cookies: [], origins: [] }, actionTimeout: 15_000 });
 test.describe.configure({ timeout: 240_000 });
 
 for (const mesh of ["up", "blocked"] as const) {
-  test(`a shared task and a DM reach the peer with the mesh ${mesh}`, async ({ browser }) => {
+  test(`a shared task and a DM reach the peer with the mesh ${mesh} @dev-server`, async ({
+    browser,
+  }) => {
     const id = `cn${mesh}${Date.now().toString(36)}`;
     const events: string[] = [];
     const contexts: BrowserContext[] = [];
