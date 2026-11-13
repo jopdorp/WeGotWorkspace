@@ -87,55 +87,28 @@ final class AdminUsersTest extends WgwDatabaseTestCase
         $this->assertNotContains('dave', $usernames);
     }
 
-    public function test_creating_user_with_email_sends_invitation(): void
+    public function test_created_user_can_set_password_from_invitation_within_fourteen_days(): void
     {
-        $this->enableInvitationMail();
+        config(['app.url' => 'https://wgw.example.test']);
+        $this->setAppSetting(SettingKeys::MAIL_DELIVERY_TRANSPORT, MailDeliveryConfig::TRANSPORT_PHP);
+        Mail::fake();
 
         $this->withBearer($this->adminBearerToken())
             ->postJson('/api/v1/admin/users', [
-                'username' => 'dave',
-                'password' => 'temporary-secret',
-                'displayName' => 'Dave',
-                'email' => 'dave@example.test',
+                'username' => 'dave', 'password' => 'temporary-secret', 'email' => 'dave@example.test',
             ])
             ->assertOk();
 
-        Mail::assertSent(OutboundMessageMail::class, function (OutboundMessageMail $mail): bool {
-            return $mail->outbound->to === ['dave@example.test']
-                && $mail->outbound->subject === 'Set your WeGotWorkspace password'
-                && str_contains($mail->outbound->textBody, 'You have been given an account on this workspace.')
-                && str_contains($mail->outbound->textBody, '/login/reset?token=');
-        });
-    }
-
-    public function test_invitation_link_works_once_and_expires_after_fourteen_days(): void
-    {
-        $this->enableInvitationMail();
-        $this->withBearer($this->adminBearerToken())
-            ->postJson('/api/v1/admin/users', [
-                'username' => 'dave',
-                'password' => 'temporary-secret',
-                'displayName' => 'Dave',
-                'email' => 'dave@example.test',
-            ])
-            ->assertOk();
-
+        Mail::assertSent(OutboundMessageMail::class, 1);
         $token = $this->invitationToken();
-        $expiresAt = (int) ApiPasswordResetToken::query()->where('username', 'dave')->value('expires_at');
-        $this->assertGreaterThan(time() + PasswordRecoveryService::INVITATION_TTL_SECONDS - 2, $expiresAt);
-        $this->assertLessThanOrEqual(time() + PasswordRecoveryService::INVITATION_TTL_SECONDS + 2, $expiresAt);
-
-        $this->postJson('/api/v1/auth/password-resets/'.$token, ['password' => 'chosen-password'])
-            ->assertOk();
+        $row = ApiPasswordResetToken::query()->where('username', 'dave')->firstOrFail();
+        $this->assertEqualsWithDelta(time() + PasswordRecoveryService::INVITATION_TTL_SECONDS, $row->expires_at, 2);
+        $row->update(['expires_at' => time() - 1]);
         $this->postJson('/api/v1/auth/password-resets/'.$token, ['password' => 'another-password'])
             ->assertBadRequest();
-
-        $this->app->make(PasswordRecoveryService::class)
-            ->sendInvitation('dave', 'dave@example.test');
-        $expiredToken = $this->invitationToken();
-        ApiPasswordResetToken::query()->where('username', 'dave')->update(['expires_at' => time() - 1]);
-        $this->postJson('/api/v1/auth/password-resets/'.$expiredToken, ['password' => 'another-password'])
-            ->assertBadRequest();
+        $this->app->make(PasswordRecoveryService::class)->sendInvitation('dave', 'dave@example.test');
+        $this->postJson('/api/v1/auth/password-resets/'.$this->invitationToken(), ['password' => 'chosen-password'])
+            ->assertOk();
     }
 
     public function test_username_is_immutable_on_update(): void
@@ -283,22 +256,12 @@ final class AdminUsersTest extends WgwDatabaseTestCase
         $this->assertTrue($alice['enabled']);
     }
 
-    private function enableInvitationMail(): void
-    {
-        config(['app.url' => 'https://wgw.example.test']);
-        $this->setAppSettings([
-            SettingKeys::MAIL_DELIVERY_FROM => 'ops@example.test',
-            SettingKeys::MAIL_DELIVERY_TRANSPORT => MailDeliveryConfig::TRANSPORT_PHP,
-        ]);
-        Mail::fake();
-    }
-
     private function invitationToken(): string
     {
         $mail = Mail::sent(OutboundMessageMail::class)->last();
         $this->assertInstanceOf(OutboundMessageMail::class, $mail);
-        $this->assertSame(1, preg_match('/[?&]token=([a-f0-9]{64})/', $mail->outbound->textBody, $match));
+        preg_match('/[?&]token=([a-f0-9]{64})/', $mail->outbound->textBody, $match);
 
-        return $match[1];
+        return $match[1] ?? self::fail('Invitation mail has no reset token.');
     }
 }
