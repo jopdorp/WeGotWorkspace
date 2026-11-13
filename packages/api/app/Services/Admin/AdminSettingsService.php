@@ -16,6 +16,16 @@ use App\Support\TimezoneNormalizer;
 
 final class AdminSettingsService
 {
+    private const OPERATOR_MANAGED_KEYS = [
+        SettingKeys::MAIL_DELIVERY_FROM,
+        SettingKeys::MAIL_DELIVERY_TRANSPORT,
+        SettingKeys::MAIL_DELIVERY_SMTP_HOST,
+        SettingKeys::MAIL_DELIVERY_SMTP_PORT,
+        SettingKeys::MAIL_DELIVERY_SMTP_SECURITY,
+        SettingKeys::MAIL_DELIVERY_SMTP_USERNAME,
+        SettingKeys::MAIL_DELIVERY_SMTP_PASSWORD,
+    ];
+
     public function __construct(
         private MailDeliverySettingsStore $mailDelivery,
         private McpEnabled $mcp,
@@ -29,6 +39,10 @@ final class AdminSettingsService
      */
     public function save(array $values, bool $clearSmtpPassword = false, bool $clearTurnSecret = false): array
     {
+        if (config('wgw.operator_managed')) {
+            $values = array_diff_key($values, array_flip(self::OPERATOR_MANAGED_KEYS));
+            $clearSmtpPassword = false;
+        }
         $this->mailDelivery->persistAdminSave($values, $clearSmtpPassword);
         unset($values[SettingKeys::MAIL_DELIVERY_SMTP_PASSWORD], $values[SettingKeys::MAIL_DELIVERY_LAST_TEST_SEND]);
         $values = $this->resolveTurnSecret($values, $clearTurnSecret);

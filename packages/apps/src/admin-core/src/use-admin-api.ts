@@ -79,6 +79,7 @@ export function useAdminAPI(source?: AdminApiSource) {
       currentUser: "",
       logoutUrl: "/logout",
       securityWarnings: [],
+      operatorManaged: false,
       updateLogLines: [],
     }),
     [],

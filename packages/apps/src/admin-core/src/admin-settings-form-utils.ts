@@ -60,6 +60,7 @@ export type AdminSettingsFormState = {
   mailDeliverySmtpUsername: string;
   mailDeliverySmtpPassword: string;
   mcpEnabled: boolean;
+  operatorManaged: boolean;
 };
 
 /** Keep the progress card visible during POST /apply while merging poll snapshots. */
@@ -122,6 +123,7 @@ export function buildAdminSettingsFormState(
     mailDeliverySmtpUsername: data.mailDelivery.config.smtpUsername,
     mailDeliverySmtpPassword: "",
     mcpEnabled: data.mcp.enabled,
+    operatorManaged: data.operatorManaged,
   };
 }
 

@@ -136,6 +136,21 @@ final class AdminMailDeliveryTest extends WgwDatabaseTestCase
             ->assertJsonPath('mailDelivery.config.smtpPasswordSet', false);
     }
 
+    public function test_operator_managed_settings_are_not_saved(): void
+    {
+        AppSetting::setValue(SettingKeys::MAIL_DELIVERY_SMTP_HOST, 'relay.example.test');
+        config(['wgw.operator_managed' => true]);
+
+        $this->withBearer($this->adminBearerToken())
+            ->putJson('/api/v1/admin/settings', [
+                'values' => [SettingKeys::MAIL_DELIVERY_SMTP_HOST => 'elsewhere.example.test'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('saved', []);
+
+        $this->assertSame('relay.example.test', AppSetting::getValue(SettingKeys::MAIL_DELIVERY_SMTP_HOST));
+    }
+
     public function test_test_send_uses_same_send_path(): void
     {
         Mail::fake();

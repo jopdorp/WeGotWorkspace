@@ -70,6 +70,7 @@ final class AdminStateService
             'currentUser' => $adminUsername,
             'logoutUrl' => $this->urls->logout(),
             'securityWarnings' => $this->securityWarnings(),
+            'operatorManaged' => (bool) config('wgw.operator_managed'),
         ];
     }
 

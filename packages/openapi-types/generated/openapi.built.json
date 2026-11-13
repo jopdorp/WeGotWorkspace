@@ -1239,6 +1239,10 @@
                             "$ref": "#/components/schemas/AdminSecurityWarning"
                         },
                         "description": "Configuration problems the admin should fix. Empty when there are none."
+                    },
+                    "operatorManaged": {
+                        "type": "boolean",
+                        "description": "True when the operator sets mail delivery. Saves skip those settings."
                     }
                 },
                 "required": [
@@ -1253,7 +1257,8 @@
                     "mcp",
                     "currentUser",
                     "logoutUrl",
-                    "securityWarnings"
+                    "securityWarnings",
+                    "operatorManaged"
                 ]
             },
             "UpdateApplyResponse": {

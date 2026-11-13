@@ -178,6 +178,7 @@ export function mapWgwAdminStateToUI(
     currentUser: state.currentUser,
     logoutUrl: state.logoutUrl,
     securityWarnings: state.securityWarnings,
+    operatorManaged: state.operatorManaged,
     updateLogLines,
   };
 }

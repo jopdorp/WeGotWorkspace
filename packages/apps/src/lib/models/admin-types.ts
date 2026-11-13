@@ -235,6 +235,7 @@ export type AdminUIData = {
   currentUser: string;
   logoutUrl: string;
   securityWarnings: AdminSecurityWarning[];
+  operatorManaged: boolean;
   updateLogLines: string[];
 };
 
