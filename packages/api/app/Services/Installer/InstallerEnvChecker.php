@@ -6,6 +6,7 @@ namespace App\Services\Installer;
 
 use App\Support\AppPaths;
 use App\Support\WgwEnvLocation;
+use App\Support\WgwInstallConfig;
 
 final class InstallerEnvChecker
 {
@@ -14,6 +15,7 @@ final class InstallerEnvChecker
     public function __construct(
         private AppPaths $paths,
         private InstallerWindow $window,
+        private WgwInstallConfig $install,
     ) {}
 
     /**
@@ -29,7 +31,10 @@ final class InstallerEnvChecker
         $checks[] = $this->writable($this->paths->dataDir());
         $checks[] = $this->installWindow();
         $this->paths->ensureDataDirWebDeny();
-        $checks[] = $this->writable($this->paths->configDir());
+        // Docker images ship the code read-only and upgrade on the host.
+        if ($this->install->installChannel() !== 'docker') {
+            $checks[] = $this->writable($this->paths->configDir());
+        }
         foreach ($this->apiRuntimeChecks($this->paths->installRoot()) as $check) {
             $checks[] = $check;
         }
