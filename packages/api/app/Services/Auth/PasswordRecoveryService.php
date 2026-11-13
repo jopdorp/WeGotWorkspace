@@ -21,6 +21,8 @@ final class PasswordRecoveryService
 {
     public const int TOKEN_TTL_SECONDS = 15 * 60;
 
+    public const int INVITATION_TTL_SECONDS = 14 * 24 * 60 * 60;
+
     /**
      * Skip reasons that mean the install cannot send recovery mail at all, so
      * an admin must act; logged at error. The others come from what the
@@ -61,6 +63,21 @@ final class PasswordRecoveryService
             return;
         }
 
+        $this->deliver((string) $user->username, $email, self::TOKEN_TTL_SECONDS, false);
+    }
+
+    public function sendInvitation(string $username, ?string $email): void
+    {
+        $email = trim((string) $email);
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return;
+        }
+
+        $this->deliver($username, $email, self::INVITATION_TTL_SECONDS, true);
+    }
+
+    private function deliver(string $username, string $email, int $ttl, bool $invitation): void
+    {
         $config = $this->mailDelivery->loadConfig();
         $canSubmit = (bool) ($this->mailDelivery->adminState()['capability']['canSubmit'] ?? false);
         if (! $canSubmit) {
@@ -76,8 +93,10 @@ final class PasswordRecoveryService
         }
 
         $token = bin2hex(random_bytes(32));
-        $this->replaceToken((string) $user->username, $token);
-        $message = $this->resetMail->message($config->effectiveFrom(), $email, $token);
+        $this->replaceToken($username, $token, $ttl);
+        $message = $invitation
+            ? $this->resetMail->invitationMessage($config->effectiveFrom(), $email, $token)
+            : $this->resetMail->message($config->effectiveFrom(), $email, $token);
 
         try {
             $result = $this->mailDelivery->send($message, $config);
@@ -155,13 +174,13 @@ final class PasswordRecoveryService
         return $email;
     }
 
-    private function replaceToken(string $username, string $token): void
+    private function replaceToken(string $username, string $token, int $ttl): void
     {
         ApiPasswordResetToken::query()->where('username', $username)->delete();
         ApiPasswordResetToken::query()->create([
             'token_hash' => hash('sha256', $token),
             'username' => $username,
-            'expires_at' => time() + self::TOKEN_TTL_SECONDS,
+            'expires_at' => time() + $ttl,
         ]);
     }
 

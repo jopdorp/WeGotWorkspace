@@ -28,4 +28,24 @@ final class PasswordResetMailFactory
             ]),
         );
     }
+
+    public function invitationMessage(string $from, string $to, string $token): OutboundMessage
+    {
+        $link = PublicAppUrl::to('login/reset').'?token='.$token;
+
+        return new OutboundMessage(
+            from: $from,
+            to: [$to],
+            subject: 'Set your WeGotWorkspace password',
+            textBody: implode("\n", [
+                'You have been given an account on this workspace.',
+                '',
+                'Set your password here (valid for 14 days):',
+                $link,
+                '',
+                'This link can only be used once.',
+                'This message being submitted does not mean it reached an inbox.',
+            ]),
+        );
+    }
 }

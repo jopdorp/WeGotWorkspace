@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Admin;
 
 use App\Dav\Server\WgwCardBackend;
+use App\Models\ApiPasswordResetToken;
 use App\Models\GroupMember;
 use App\Models\MailUserCredential;
 use App\Models\Principal;
 use App\Models\User;
+use App\Services\Auth\PasswordRecoveryService;
 use App\Services\Auth\UserSessionRevoker;
 use App\Services\Drive\DriveShareRevoker;
 use App\Services\Installer\InstallerSeeder;
@@ -28,6 +30,7 @@ final class AdminUserProvisionerService
         private UserSessionRevoker $sessions,
         private DriveShareRevoker $driveShares,
         private AdminRoleWriter $roles,
+        private PasswordRecoveryService $passwordRecovery,
     ) {}
 
     /**
@@ -65,6 +68,7 @@ final class AdminUserProvisionerService
         );
 
         $this->syncGroupMemberships($username, $groupUris);
+        $this->passwordRecovery->sendInvitation($username, $email);
     }
 
     /**
@@ -101,6 +105,7 @@ final class AdminUserProvisionerService
             }
             $hash = password_hash($password, PASSWORD_DEFAULT);
             User::query()->where('username', $username)->update(['digest' => $hash]);
+            ApiPasswordResetToken::query()->where('username', $username)->delete();
             $this->sessions->revokeAll($username);
         }
 

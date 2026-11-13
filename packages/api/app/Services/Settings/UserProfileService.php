@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Settings;
 
 use App\Exceptions\ApiHttpException;
+use App\Models\ApiPasswordResetToken;
 use App\Models\Principal;
 use App\Models\User;
 
@@ -31,5 +32,6 @@ final class UserProfileService
         if ($updated === 0) {
             throw new ApiHttpException(400, 'User not found.', 'bad_request');
         }
+        ApiPasswordResetToken::query()->where('username', $username)->delete();
     }
 }
