@@ -140,6 +140,7 @@ final class NoteRepository
 
         // The check and the insert in one transaction: two creates with the
         // same UID cannot both pass the check before either one is written.
+        // MySQL can deadlock concurrent writes to one notebook (its sync token), so retry.
         try {
             $uid = DB::connection('wgw')->transaction(function () use ($username, $uid, $instance, $note, $allowStoredTags): string {
                 $uid = $this->createUid->resolve($username, $uid);
@@ -151,7 +152,7 @@ final class NoteRepository
                 );
 
                 return $uid;
-            });
+            }, 3);
         } catch (QueryException|PDOException $exception) {
             NoteUidConflict::throwIf($exception);
             throw $exception;
@@ -268,7 +269,7 @@ final class NoteRepository
             }
 
             return ['instance' => $instance, 'object' => $object];
-        });
+        }, 3);
 
         $this->indexObject($username, $updated['instance'], $updated['object']);
         $starred = NoteStar::query()
