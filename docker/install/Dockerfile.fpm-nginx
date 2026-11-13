@@ -1,0 +1,43 @@
+# php-fpm and nginx images for Kubernetes and other installs that run them
+# separately, non-root with a read-only root filesystem. Built from the same
+# deploy ZIP as Dockerfile.runtime: --target fpm or --target nginx.
+
+# Index digests (manifest list), not a single-platform digest. Dependabot bumps these.
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS unpack
+
+COPY dist/releases/wegotworkspace-deploy.zip /tmp/deploy.zip
+RUN unzip -q /tmp/deploy.zip -d /release \
+    && cp -a /release /static \
+    && rm -rf /static/packages /static/bootstrap /static/wgw-content /static/wgw-plugins /static/*.php /static/.htaccess /static/.user.ini
+
+FROM php:8.5-fpm-alpine3.24@sha256:951fb5b1780219b81d5daffa4cebef8e0077c537f3893d9790a5dfcd66ca334d AS fpm
+
+# util-linux setpriv: busybox's cannot switch uid, which a root init step needs to drop to www-data.
+RUN apk add --no-cache libzip icu-libs icu-data-full gmp oniguruma setpriv \
+    && apk add --no-cache --virtual .build-deps oniguruma-dev libzip-dev icu-dev sqlite-dev gmp-dev \
+    && docker-php-ext-install pdo pdo_sqlite pdo_mysql mbstring zip intl gmp bcmath \
+    && apk del .build-deps \
+    && apk upgrade --no-cache
+
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/wgw-uploads.ini
+COPY docker/install/fpm-php.ini /usr/local/etc/php/conf.d/zz-wgw.ini
+COPY docker/install/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-wgw.conf
+COPY --from=unpack /release/ /var/www/html/
+# uid 33 is www-data in the single-container image, so volumes move between the two.
+# wgw:install checks that the install root and in-tree storage are writable.
+RUN chown 33:33 /var/www/html \
+    && chown -R 33:33 /var/www/html/packages/api/bootstrap/cache /var/www/html/packages/api/storage
+
+ENV WGW_INSTALL_CHANNEL=docker LOG_CHANNEL=stack LOG_STACK=stderr
+WORKDIR /var/www/html
+USER 33:33
+STOPSIGNAL SIGQUIT
+
+FROM nginx:1.30-alpine-slim@sha256:e2355aa95529a7999dad94ddcb45a8768abf6fb0b204c93b1a3ffce477d7b893 AS nginx
+
+RUN apk upgrade --no-cache
+COPY docker/install/nginx.conf /etc/nginx/nginx.conf
+COPY --from=unpack /static/ /var/www/html/
+COPY --from=unpack /release/packages/apps/shell/dist/assets/ /var/www/html/assets/
+USER 33:33
+EXPOSE 8080

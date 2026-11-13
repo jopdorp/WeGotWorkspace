@@ -336,6 +336,10 @@ Each tagged GitHub Release includes:
 
 Maintainers: pre-release checklist (smoke job, GHCR visibility, multi-arch manifest, spot-check `curl | sh`) — [install-docker-ops.md § Maintainer release checklist](install-docker-ops.md#maintainer-release-checklist).
 
+## php-fpm and nginx images
+
+For Kubernetes and other installs that run php-fpm and nginx separately, non-root with a read-only root filesystem, every release also publishes `ghcr.io/wegotworkspace/wegotworkspace-fpm` and `ghcr.io/wegotworkspace/wegotworkspace-nginx` with the same tags, built from the same deploy ZIP by [Dockerfile.fpm-nginx](../docker/install/Dockerfile.fpm-nginx). Both run as uid 33 and have no entrypoint, so your manifests run `wgw:install` or `wgw:schema-migrate`, the scheduler, and the storage folders [wgw-install-prepare-dirs.sh](../docker/install/wgw-install-prepare-dirs.sh) creates. nginx listens on 8080, serves the static files itself and passes the rest to php-fpm on `127.0.0.1:9000`, so run both in one pod or mount your own `/etc/nginx/nginx.conf`. Point `WGW_ENV_FILE`, `WGW_DATA_DIR` and `WGW_STORAGE_PATH` at volumes and give both containers a writable `/tmp`, php-fpm also `packages/api/bootstrap/cache`; only the install step needs a writable root. A weekly rebuild moves the latest release's tags to fresh base images.
+
 ## Troubleshooting
 
 | Symptom | Check |
