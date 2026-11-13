@@ -1,0 +1,26 @@
+name: Dependabot auto-merge
+
+# Turns on auto-merge for a Dependabot pull request unless it updates a major
+# version. GitHub merges it once the required checks pass. The composer,
+# GitHub Actions and Docker groups include majors, so check every dependency.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@v3
+
+      - if: ${{ !contains(steps.metadata.outputs.updated-dependencies-json, 'semver-major') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --merge "$PR_URL"
